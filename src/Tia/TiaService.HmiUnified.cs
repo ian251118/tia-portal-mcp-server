@@ -190,12 +190,41 @@ namespace TiaMcpServer
         private static object GetProp(object obj, string name) =>
             Try(() => obj.GetType().GetProperty(name)?.GetValue(obj));
 
+        /// <summary>Outcome of setting a property: what it was, what it reads now, and whether that is what was asked.</summary>
+        private sealed class PropertyChange
+        {
+            public object Previous;
+            public object Actual;
+            public bool Applied;
+        }
+
+        private static bool SameValue(object wanted, object actual)
+        {
+            if (wanted == null || actual == null) return wanted == null && actual == null;
+            if (wanted is Color a && actual is Color b) return a.ToArgb() == b.ToArgb();
+            if (wanted is float || wanted is double)
+            {
+                var w = Convert.ToDouble(wanted, CultureInfo.InvariantCulture);
+                var r = Convert.ToDouble(actual, CultureInfo.InvariantCulture);
+                return Math.Abs(w - r) <= 1e-6 * Math.Max(1.0, Math.Abs(w));
+            }
+            return Equals(wanted, actual) ||
+                   string.Equals(Convert.ToString(wanted, CultureInfo.InvariantCulture),
+                                 Convert.ToString(actual, CultureInfo.InvariantCulture), StringComparison.Ordinal);
+        }
+
+        private const string NotAppliedNote =
+            "TIA Portal accepted the call without an error but the property does not read back as the requested " +
+            "value, so it was NOT applied. The property may be fixed by another setting of the item, or need a " +
+            "different value format.";
+
         /// <summary>
         /// Sets a property addressed by a dotted path ("BackColor", "Font.Size",
-        /// "Content.ContentMode") and returns the previous value. Multilingual text
-        /// properties (Text, ToolTipText) take plain text.
+        /// "Content.ContentMode"). Multilingual text properties (Text, ToolTipText) take
+        /// plain text. Openness sometimes ignores an assignment without raising an error,
+        /// so the property is read back and the result says whether the value took.
         /// </summary>
-        private static object SetPropertyPath(object target, string path, string value)
+        private static PropertyChange SetPropertyPath(object target, string path, string value)
         {
             if (string.IsNullOrWhiteSpace(path))
                 throw new ArgumentException("Property name is empty.");
@@ -223,15 +252,23 @@ namespace TiaMcpServer
                 var ml = (MultilingualText)prop.GetValue(current);
                 var previousText = PlainText(FirstText(ml));
                 SetMultilingualText(ml, value);
-                return previousText;
+
+                var wantedText = (value ?? "").TrimStart().StartsWith("<body", StringComparison.OrdinalIgnoreCase)
+                    ? PlainText(value)
+                    : (value ?? "").Trim();
+                var actualText = PlainText(FirstText(ml)) ?? "";
+                return new PropertyChange { Previous = previousText, Actual = actualText, Applied = actualText == wantedText };
             }
 
             if (!prop.CanWrite)
                 throw new InvalidOperationException($"Property '{path}' of '{current.GetType().Name}' is read-only.");
 
             var previous = Try(() => FormatValue(prop.GetValue(current)));
-            prop.SetValue(current, ConvertValue(value, prop.PropertyType, path));
-            return previous;
+            var converted = ConvertValue(value, prop.PropertyType, path);
+            prop.SetValue(current, converted);
+
+            var readBack = prop.GetValue(current);
+            return new PropertyChange { Previous = previous, Actual = FormatValue(readBack), Applied = SameValue(converted, readBack) };
         }
 
         /// <summary>All simple readable properties of an item; "parts" (Font, Content, ...) one level deep.</summary>
@@ -709,13 +746,22 @@ namespace TiaMcpServer
                       spec.Has("width") ? spec.UInt("width", 0) : (uint?)null,
                       spec.Has("height") ? spec.UInt("height", 0) : (uint?)null);
 
+            // Assignments TIA silently ignored are reported per item rather than failing the batch.
+            var notApplied = new List<object>();
+            void Set(string path, string value)
+            {
+                var change = SetPropertyPath(item, path, value);
+                if (!change.Applied)
+                    notApplied.Add(new { property = path, requested = value, reads = change.Actual });
+            }
+
             if (spec.Has("text"))
-                SetPropertyPath(item, "Text", spec.Str("text") ?? "");
+                Set("Text", spec.Str("text") ?? "");
 
             var properties = spec.Obj("properties");
             if (properties != null)
                 foreach (var p in properties.Properties())
-                    SetPropertyPath(item, p.Name, TokenToString(p.Value));
+                    Set(p.Name, TokenToString(p.Value));
 
             foreach (var token in spec.Arr("tagBindings") ?? new JArray())
             {
@@ -745,6 +791,7 @@ namespace TiaMcpServer
                 name,
                 status = existing != null ? "replaced" : "created",
                 type = item.GetType().Name,
+                propertiesNotApplied = notApplied.Count == 0 ? null : notApplied,
                 scriptIssues = scriptIssues.Count == 0 ? null : scriptIssues
             };
         }
@@ -798,8 +845,17 @@ namespace TiaMcpServer
 
             return Edit($"set {propertyPath} of {TargetName(target)}", () =>
             {
-                var previous = SetPropertyPath(target, propertyPath, value);
-                return new { set = true, item = TargetName(target), property = propertyPath, value, previous };
+                var change = SetPropertyPath(target, propertyPath, value);
+                return new
+                {
+                    set = change.Applied,
+                    item = TargetName(target),
+                    property = propertyPath,
+                    requested = value,
+                    value = change.Actual,
+                    previous = change.Previous,
+                    note = change.Applied ? null : NotAppliedNote
+                };
             });
         }
 
@@ -818,8 +874,15 @@ namespace TiaMcpServer
 
             return Edit($"set text of {buttonName}", () =>
             {
-                var previous = SetPropertyPath(item, "Text", text);
-                return new { set = true, button = buttonName, text, previous };
+                var change = SetPropertyPath(item, "Text", text);
+                return new
+                {
+                    set = change.Applied,
+                    button = buttonName,
+                    text = change.Actual,
+                    previous = change.Previous,
+                    note = change.Applied ? null : NotAppliedNote
+                };
             });
         }
 

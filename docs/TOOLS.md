@@ -788,7 +788,7 @@ Create a screen item of any creatable type (HmiIOField, HmiRectangle, HmiSlider,
 
 *Set an item property* - group `hmi` - write
 
-Set one property of a screen item (or of the screen) by name; the value is converted to the property's type (number, bool, enum name, colour, text). Nested parts use a dotted path: "Font.Size", "Content.ContentMode". Returns the previous value. Discover properties with tia_hmi_get_item.
+Set one property of a screen item (or of the screen) by name; the value is converted to the property's type (number, bool, enum name, colour, text). Nested parts use a dotted path: "Font.Size", "Content.ContentMode". The property is read back afterwards: 'set' is true only if it now holds the requested value (TIA sometimes ignores an assignment without an error), 'value' is what it reads and 'previous' what it was. Discover properties with tia_hmi_get_item.
 
 | Argument | Type | Required | Description |
 |---|---|---|---|

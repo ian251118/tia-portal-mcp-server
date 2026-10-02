@@ -254,6 +254,13 @@ namespace TiaMcpServer
             foreach (var group in project.DeviceGroups)
                 foreach (var d in DevicesInGroup(group))
                     yield return d;
+
+            // "Ungrouped devices" is a separate system group: it holds what was added in
+            // the network view without a station of its own (distributed I/O, GSD devices).
+            var ungrouped = Try(() => project.UngroupedDevicesGroup);
+            if (ungrouped != null)
+                foreach (Device d in ungrouped.Devices)
+                    yield return d;
         }
 
         private static IEnumerable<Device> DevicesInGroup(DeviceUserGroup group)

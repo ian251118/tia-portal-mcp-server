@@ -16,7 +16,7 @@ namespace TiaMcpServer.Mcp
     internal sealed class McpServer
     {
         public const string ServerName = "tia-portal-mcp";
-        public const string ServerVersion = "1.0.0";
+        public const string ServerVersion = "1.0.1";
 
         // Newest first. We answer with the client's version when we know it, else our newest.
         private static readonly string[] SupportedProtocolVersions = { "2025-06-18", "2025-03-26", "2024-11-05" };

@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.0.1
+
+### Fixed
+
+- Devices in TIA Portal's *Ungrouped devices* folder (distributed I/O, GSD devices added in the network view) were
+  missing from `tia_list_devices`, `tia_list_modules`, `tia_list_ip_addresses` and every lookup by device name.
+- `tia_hmi_set_widget_property`, `tia_hmi_set_widget_color` and `tia_hmi_set_button_text` reported `set: true`
+  even when TIA Portal silently ignored the assignment. The property is now read back: `set` is true only if it
+  holds the requested value, and `value` shows what it actually reads. `tia_hmi_create_items` lists such
+  properties per item under `propertiesNotApplied`.
+
 ## 1.0.0
 
 First public release.

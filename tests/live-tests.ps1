@@ -416,7 +416,7 @@ END_FUNCTION_BLOCK
         $item = Tool 'tia_hmi_get_item' @{ screen = 'MCPTEST_Screen'; item = 'Title' }
         Check '  nested properties are read' ($item.Data.properties.Font.Size -eq 24 -and $item.Data.properties.ForeColor -eq '#1E90FF') ($item.Text -replace '\s+', ' ')
         $set = Tool 'tia_hmi_set_widget_property' @{ screen = 'MCPTEST_Screen'; item = 'Title'; property = 'Font.Weight'; value = 'Bold' }
-        Check '  a property change returns the previous value' ($null -ne $set.Data.previous)
+        Check '  a property change is read back and returns the previous value' ($set.Data.set -eq $true -and $set.Data.value -eq 'Bold' -and $null -ne $set.Data.previous) ($set.Text -replace '\s+', ' ')
         $null = Tool 'tia_hmi_set_widget_property' @{ screen = 'MCPTEST_Screen'; item = 'Title'; property = 'Font.Weight'; value = 'Heavyish' } -Expect error -Match 'Valid values'
         $null = Tool 'tia_hmi_set_widget_color' @{ screen = 'MCPTEST_Screen'; item = 'Box'; property = 'BackColor'; color = 'NotAColour' } -Expect error -Match 'Unknown colour'
         $null = Tool 'tia_hmi_set_widget_color' @{ screen = 'MCPTEST_Screen'; item = 'Box'; property = 'BackColor'; color = '255,128,0' }

@@ -205,8 +205,9 @@ namespace TiaMcpServer.Tools
             r.Add("tia_hmi_set_widget_property", Group, Safety.Write, "Set an item property",
                     "Set one property of a screen item (or of the screen) by name; the value is converted to the " +
                     "property's type (number, bool, enum name, colour, text). Nested parts use a dotted path: " +
-                    "\"Font.Size\", \"Content.ContentMode\". Returns the previous value. Discover properties with " +
-                    "tia_hmi_get_item.")
+                    "\"Font.Size\", \"Content.ContentMode\". The property is read back afterwards: 'set' is true only " +
+                    "if it now holds the requested value (TIA sometimes ignores an assignment without an error), " +
+                    "'value' is what it reads and 'previous' what it was. Discover properties with tia_hmi_get_item.")
                 .Str("device", Device)
                 .Str("screen", Screen, required: true)
                 .Str("item", ItemOrScreen, required: true)
