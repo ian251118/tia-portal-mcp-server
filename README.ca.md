@@ -87,6 +87,12 @@ Configuració a Claude Desktop (`%APPDATA%\Claude\claude_desktop_config.json`), 
 El primer cop que es connecti, TIA Portal mostrarà un diàleg d'accés d'Openness: tria **Sí a tot**. Torna a sortir
 cada vegada que es recompila l'executable.
 
+**Permisos de les eines.** Cada client MCP et deixa triar, eina per eina, si l'assistent la pot cridar lliurement
+o t'ha de demanar permís cada vegada. Aquest ajust és teu i es guarda al teu client, no al servidor. A Claude
+Desktop (*Settings > Connectors > tia-portal*) un bon punt de partida és: **permetre sempre** les de només
+lectura, i **preguntar cada vegada** per a totes les que escriuen, sobretot `tia_save_project` i les destructives
+(`tia_delete_*`, `tia_hmi_delete_*`, `tia_hmi_remove_*`, `tia_close_project`).
+
 ## Bons costums
 
 - Les primeres vegades, treballa sobre una **còpia** del projecte.

@@ -148,6 +148,18 @@ Open your project in TIA Portal and ask the assistant to connect. TIA Portal sho
 for the server: choose **Yes to all**. It appears once per build of the exe (TIA remembers the file by its hash),
 so it comes back after you rebuild.
 
+### 6. Set the tool permissions in your client
+
+MCP clients let you choose, per tool, whether the assistant may call it freely or has to ask you each time. That
+setting is yours and lives in your client, not in this server. A sensible starting point in Claude Desktop
+(*Settings > Connectors > tia-portal*):
+
+- **Always allow**: the read-only tools (`tia_list_*`, `tia_read_block`, `tia_hmi_get_*`, `tia_s7_*`...).
+- **Ask every time**: everything that writes, and above all `tia_save_project` and the destructive tools
+  (`tia_delete_*`, `tia_hmi_delete_*`, `tia_hmi_remove_*`, `tia_close_project`).
+
+Every tool description starts with `[READ-ONLY]`, `[WRITE]` or `[DESTRUCTIVE]`, so the list is easy to sort.
+
 ---
 
 ## Using it
