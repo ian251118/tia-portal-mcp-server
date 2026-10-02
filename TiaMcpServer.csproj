@@ -1,0 +1,59 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <!-- TIA Openness (Siemens.Engineering.dll) targets .NET Framework 4.8.
+         The whole server must run on net48 to load it in-process. -->
+    <TargetFramework>net48</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <AssemblyName>TiaMcpServer</AssemblyName>
+    <RootNamespace>TiaMcpServer</RootNamespace>
+    <Version>1.0.0</Version>
+    <Platforms>x64</Platforms>
+    <PlatformTarget>x64</PlatformTarget>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <!-- Keep the builder's folder names out of the binary: source and PDB paths are
+         recorded relative to the repository instead of as absolute local paths. -->
+    <Deterministic>true</Deterministic>
+    <PathMap>$(MSBuildProjectDirectory)=.</PathMap>
+
+    <!-- TIA Portal version to build against. Override on the command line for another
+         version, e.g. `dotnet build -c Release -p:TiaVersion=19`, or point
+         TiaPublicApiDir at a non-default installation folder. -->
+    <TiaVersion Condition="'$(TiaVersion)' == ''">20</TiaVersion>
+    <TiaPublicApiDir Condition="'$(TiaPublicApiDir)' == ''">$(ProgramW6432)\Siemens\Automation\Portal V$(TiaVersion)\PublicAPI\V$(TiaVersion)</TiaPublicApiDir>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    <!-- Lets the .NET SDK build net48 without the Framework Developer Pack installed. -->
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.3" PrivateAssets="all" />
+    <!-- Pure-C# S7 client for reading LIVE PLC values (Openness has no runtime API). -->
+    <PackageReference Include="Sharp7" Version="1.1.60" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Reference the Openness API but DO NOT copy it locally; it is resolved at
+         runtime from the TIA Portal installation via the AssemblyResolve handler
+         (the DLL is Siemens' and must not be redistributed). -->
+    <Reference Include="Siemens.Engineering">
+      <HintPath>$(TiaPublicApiDir)\Siemens.Engineering.dll</HintPath>
+      <Private>false</Private>
+      <SpecificVersion>false</SpecificVersion>
+    </Reference>
+    <Reference Include="Siemens.Engineering.Hmi">
+      <HintPath>$(TiaPublicApiDir)\Siemens.Engineering.Hmi.dll</HintPath>
+      <Private>false</Private>
+      <SpecificVersion>false</SpecificVersion>
+    </Reference>
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Xml.Linq" />
+  </ItemGroup>
+
+  <Target Name="CheckOpennessInstalled" BeforeTargets="ResolveAssemblyReferences">
+    <Error Condition="!Exists('$(TiaPublicApiDir)\Siemens.Engineering.dll')"
+           Text="Siemens.Engineering.dll not found in '$(TiaPublicApiDir)'. Install TIA Portal V$(TiaVersion) with the Openness option, or build with -p:TiaVersion=NN / -p:TiaPublicApiDir=PATH." />
+  </Target>
+
+</Project>

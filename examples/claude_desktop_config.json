@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "tia-portal": {
+      "command": "C:\\path\\to\\tia-portal-mcp-server\\bin\\Release\\TiaMcpServer.exe",
+      "args": [
+        "--access", "full",
+        "--no-save",
+        "--audit-log", "C:\\path\\to\\logs\\tia-mcp-audit.jsonl"
+      ]
+    }
+  }
+}

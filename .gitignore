@@ -1,0 +1,28 @@
+# Build output
+bin/
+obj/
+dist/
+
+# Visual Studio / Rider / VS Code
+.vs/
+.idea/
+.vscode/
+*.user
+*.suo
+
+# Local client and tool state
+.claude/
+*.local.json
+
+# Logs and scratch
+*.log
+audit*.jsonl
+
+# TIA Portal projects, archives and exports must never end up in this repository
+*.ap1?
+*.ap2?
+*.zap1?
+*.zap2?
+*.al1?
+*.al2?
+tia-export/
